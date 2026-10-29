@@ -1,0 +1,35 @@
+# This working tree sits next to LIVE MALWARE, a payload/IOC database, API keys
+# and a venv. Exclude all of it — only source code gets committed.
+
+# runtime data + captured payloads + logs (collection.db, dropped .ps1 malware, ...)
+clickfix/storage/
+
+# local reference docs with secrets / IOCs
+PIPELINE_CONTEXT.md
+AUTO_MODE_SETUP.md
+task76_*
+clickfix_shortlist.json
+
+# heavy local dirs / vendored third-party
+pwenv/
+pwbrowsers/
+_ref/
+.pytest_cache/
+__pycache__/
+*.pyc
+*.pyo
+
+# secrets / databases / logs anywhere
+*.env
+.clickfix-env
+*.db
+*.db-shm
+*.db-wal
+*.jsonl
+*.jsonl.bak*
+*.log
+
+# stray malware samples / evidence at any level (code has none of these)
+*.ps1
+*.bat
+*.exe

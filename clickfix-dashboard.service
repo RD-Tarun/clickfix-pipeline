@@ -1,0 +1,14 @@
+[Unit]
+Description=ClickFix -> CAPE local dashboard (127.0.0.1:8077, view over SSH tunnel)
+After=network.target
+
+[Service]
+Type=simple
+User=maldex
+WorkingDirectory=/home/maldex/clickfix-cape/eval_staging/clickfix
+ExecStart=/usr/bin/python3 /home/maldex/clickfix-cape/eval_staging/clickfix/dashboard_server.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

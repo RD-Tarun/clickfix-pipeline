@@ -1,0 +1,95 @@
+# Copy to clickfix.conf and tune. Secrets (URLSCAN_API_KEY, CAPE_API_TOKEN)
+# are read from the environment instead, so they don't need to live here.
+#
+# Run `python3 pipeline.py preflight` after editing -- it checks the settings
+# that otherwise fail silently (missing API key, unknown machine label, and
+# the task-tag trap described under [cape]).
+
+[urlscan]
+# Lucene-style query against urlscan.io/api/v1/search/. ClickFix lure wording
+# drifts -- revisit this periodically. Broad queries fill the queue with real
+# captchas; narrow ones silently collect nothing.
+query = (page.title:"verify you are human" OR page.title:"I am not a robot" OR page.title:"human verification") AND page.url:*
+lookback_minutes = 20
+page_size = 100
+
+# The Result API + rendered-DOM tier. This is the single most valuable
+# extraction layer: urlscan already ran the page in a real browser, so
+# runtime-built payloads are already materialised in the DOM, and it still
+# works after the lure domain goes offline.
+# NOTE: both /api/v1/result/ and /dom/ return HTTP 403 without an API key.
+# Set URLSCAN_API_KEY or this whole tier is skipped.
+use_result_api = yes
+result_timeout = 20
+max_dom_bytes = 5000000
+
+[extract]
+fetch_timeout = 15
+max_page_bytes = 3000000
+max_linked_scripts = 5
+follow_iframes = yes
+max_iframes = 3
+max_meta_refresh_hops = 2
+# Stop descending through further layers once a command is recovered.
+stop_on_first_hit = yes
+
+[sanitize]
+# review_mode = off -> fully automatic, no manual step (the project goal).
+#   Anything scoring >= min_submit_score is submitted; the rest is recorded
+#   as low_confidence and never blocks on a human.
+# review_mode = on  -> scores below auto_approve_threshold wait in the queue
+#   for `pipeline.py review approve <id>`.
+review_mode = off
+min_submit_score = 1
+auto_approve_threshold = 2
+min_length = 8
+max_length = 20000
+
+[cape]
+base_url = http://127.0.0.1:8000
+package = ps1
+route = internet
+
+# Analysis VM label, must match CAPE's machinery conf (kvm.conf here).
+machine = cuckoo1
+
+# LEAVE EMPTY unless you know what you are doing. CAPE requires every
+# non-architecture task tag to ALSO be present on the machine
+# (_machine_can_service_task -> other_tags.issubset(machine_tags)). cuckoo1
+# carries tags "x64,win10", so a task tag like "clickfix" matches no machine
+# and the task stays pending forever. Target the VM with `machine` above and
+# label the campaign via the submission's `custom` field instead.
+tags =
+
+timeout = 200
+priority = 1
+poll_interval = 30
+max_wait = 1800
+
+[pipeline]
+# --- Deduplication ------------------------------------------------------
+# urlscan issues a NEW scan UUID every time anyone rescans a URL, so UUID
+# dedup alone lets the same lure through repeatedly. Measured on a live poll:
+# 100 results -> 100 UUIDs but only 54 unique URLs, one URL seen 14 times.
+# Two consecutive polls: 200 results -> 54 page fetches (73% avoided).
+#
+# Layer 1: scan UUID          (always on)
+# Layer 2: normalised URL     revisit_url_days
+# Layer 3: apex domain        domain_cooldown_hours
+# Layer 4: command SHA256     skip_duplicate_commands_days
+#
+# Layers 1-3 run BEFORE any page fetch, so a duplicate costs one indexed
+# SELECT instead of a fetch plus a full extraction pass.
+
+# Re-analyse a URL we already analysed only after this many days. Do not set
+# to 0: lure domains genuinely do swap payloads, so dedup has to expire.
+revisit_url_days = 7
+
+# Skip a URL if any OTHER url on the same apex domain was analysed within this
+# many hours. 0 disables. Useful when a campaign spreads many paths across one
+# domain; harmful if you want per-path coverage.
+domain_cooldown_hours = 0
+
+# Post-extraction: same command already submitted recently -> skip.
+skip_duplicate_commands_days = 7
+skip_duplicate_content_days = 7

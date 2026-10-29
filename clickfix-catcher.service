@@ -1,0 +1,18 @@
+[Unit]
+Description=ClickFix catcher — urlscan -> extract command -> .ps1 -> detonate in CAPE (continuous)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=maldex
+WorkingDirectory=/home/maldex/clickfix-cape/eval_staging/clickfix
+ExecStart=/home/maldex/clickfix-cape/eval_staging/clickfix/run_catcher.sh
+Restart=always
+RestartSec=10
+# logs also go here (the wrapper runs the catcher which logs to stderr)
+StandardOutput=append:/home/maldex/clickfix-cape/eval_staging/clickfix/storage/catcher.log
+StandardError=append:/home/maldex/clickfix-cape/eval_staging/clickfix/storage/catcher.log
+
+[Install]
+WantedBy=multi-user.target
